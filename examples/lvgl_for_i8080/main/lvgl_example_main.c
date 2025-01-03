@@ -22,35 +22,37 @@ static const char *TAG = "example";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// Please update the following configuration according to your LCD spec //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#define EXAMPLE_LCD_PIXEL_CLOCK_HZ     (10 * 1000 * 1000)
-#define EXAMPLE_LCD_I80_BUS_WIDTH 8
+#define EXAMPLE_LCD_PIXEL_CLOCK_HZ     (20 * 1000 * 1000)
+#define EXAMPLE_LCD_I80_BUS_WIDTH 16
 
 
 #define EXAMPLE_LCD_BK_LIGHT_ON_LEVEL  1
 #define EXAMPLE_LCD_BK_LIGHT_OFF_LEVEL !EXAMPLE_LCD_BK_LIGHT_ON_LEVEL
-#define EXAMPLE_PIN_NUM_DATA0          1
-#define EXAMPLE_PIN_NUM_DATA1          2
-#define EXAMPLE_PIN_NUM_DATA2          3
-#define EXAMPLE_PIN_NUM_DATA3          4
-#define EXAMPLE_PIN_NUM_DATA4          6
-#define EXAMPLE_PIN_NUM_DATA5          7
-#define EXAMPLE_PIN_NUM_DATA6          8
+#define EXAMPLE_PIN_NUM_DATA0          47
+#define EXAMPLE_PIN_NUM_DATA1          21
+#define EXAMPLE_PIN_NUM_DATA2          14
+#define EXAMPLE_PIN_NUM_DATA3          13
+#define EXAMPLE_PIN_NUM_DATA4          12
+#define EXAMPLE_PIN_NUM_DATA5          11
+#define EXAMPLE_PIN_NUM_DATA6          10
 #define EXAMPLE_PIN_NUM_DATA7          9
 #if EXAMPLE_LCD_I80_BUS_WIDTH > 8
-#define EXAMPLE_PIN_NUM_DATA8          10
-#define EXAMPLE_PIN_NUM_DATA9          11
-#define EXAMPLE_PIN_NUM_DATA10         12
-#define EXAMPLE_PIN_NUM_DATA11         13
-#define EXAMPLE_PIN_NUM_DATA12         14
-#define EXAMPLE_PIN_NUM_DATA13         15
-#define EXAMPLE_PIN_NUM_DATA14         16
-#define EXAMPLE_PIN_NUM_DATA15         21
+#define EXAMPLE_PIN_NUM_DATA8          3
+#define EXAMPLE_PIN_NUM_DATA9          8
+#define EXAMPLE_PIN_NUM_DATA10         16
+#define EXAMPLE_PIN_NUM_DATA11         15
+#define EXAMPLE_PIN_NUM_DATA12         7
+#define EXAMPLE_PIN_NUM_DATA13         6
+#define EXAMPLE_PIN_NUM_DATA14         5
+#define EXAMPLE_PIN_NUM_DATA15         4
 #endif
-#define EXAMPLE_PIN_NUM_PCLK           5
-#define EXAMPLE_PIN_NUM_CS             41
-#define EXAMPLE_PIN_NUM_DC             42
-#define EXAMPLE_PIN_NUM_RST            47
-#define EXAMPLE_PIN_NUM_BK_LIGHT       48
+#define EXAMPLE_PIN_NUM_PCLK           18
+#define EXAMPLE_PIN_NUM_CS             -1
+#define EXAMPLE_PIN_NUM_DC             45
+#define EXAMPLE_PIN_NUM_RST            -1
+#define EXAMPLE_PIN_NUM_BK_LIGHT       46
+#define EXAMPLE_PIN_NUM_RD             48 
+#define EXAMPLE_LCD_RD_ON_LEVEL        1
 
 // The pixel number in horizontal and vertical
 #define EXAMPLE_LCD_H_RES              320
@@ -91,6 +93,14 @@ void app_main(void)
 {
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
     static lv_disp_drv_t disp_drv;      // contains callback functions
+
+    ESP_LOGI(TAG, "Turn on RD Pin");
+    gpio_config_t rd_gpio_config = {
+        .mode = GPIO_MODE_OUTPUT,
+        .pin_bit_mask = 1ULL << EXAMPLE_PIN_NUM_RD
+    };
+    ESP_ERROR_CHECK(gpio_config(&rd_gpio_config));
+    gpio_set_level(EXAMPLE_PIN_NUM_RD, EXAMPLE_LCD_RD_ON_LEVEL);
 
     ESP_LOGI(TAG, "Turn off LCD backlight");
     gpio_config_t bk_gpio_config = {
@@ -154,16 +164,16 @@ void app_main(void)
     esp_lcd_panel_handle_t panel_handle = NULL;
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = EXAMPLE_PIN_NUM_RST,
-        .color_space = ESP_LCD_COLOR_SPACE_RGB,
+        .color_space = ESP_LCD_COLOR_SPACE_BGR,
         .bits_per_pixel = 16,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_ili9488(io_handle, &panel_config,EXAMPLE_LCD_H_RES * 20 * sizeof(lv_color_t), &panel_handle));
 
     esp_lcd_panel_reset(panel_handle);
     esp_lcd_panel_init(panel_handle);
-    esp_lcd_panel_invert_color(panel_handle, true);
+    // esp_lcd_panel_invert_color(panel_handle, true);
     // the gap is LCD panel specific, even panels with the same driver IC, can have different gap value
-    esp_lcd_panel_set_gap(panel_handle, 0, 20);
+    esp_lcd_panel_set_gap(panel_handle, 0, 0);
 
     ESP_LOGI(TAG, "Turn on LCD backlight");
     gpio_set_level(EXAMPLE_PIN_NUM_BK_LIGHT, EXAMPLE_LCD_BK_LIGHT_ON_LEVEL);
@@ -200,7 +210,13 @@ void app_main(void)
 
     ESP_LOGI(TAG, "Display LVGL animation");
     lv_obj_t *scr = lv_disp_get_scr_act(disp);
-    example_lvgl_demo_ui(scr);
+    lv_obj_set_style_bg_color(scr, lv_palette_lighten(LV_PALETTE_GREY, 2), 0);
+    lv_obj_t * label1 = lv_label_create(scr);
+    lv_obj_align(label1, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_text_align(label1, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_font(label1, &lv_font_montserrat_28, 0);
+    lv_label_set_text(label1, "Hello World!");
+    // example_lvgl_demo_ui(scr);
 
     while (1) {
         // raise the task priority of LVGL and/or reduce the handler period can improve the performance

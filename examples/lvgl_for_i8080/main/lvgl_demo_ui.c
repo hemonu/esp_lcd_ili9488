@@ -76,6 +76,10 @@ static void anim_timer_cb(lv_timer_t *timer)
 
 void example_lvgl_demo_ui(lv_obj_t *scr)
 {
+    // change background color
+    // lv_obj_set_style_bg_color(scr, lv_palette_lighten(LV_PALETTE_GREY, 2), 0);
+    // lv_obj_set_style_bg_color(scr, lv_color_white(), 0);
+    
     // Create image
     img_logo = lv_img_create(scr);
     lv_img_set_src(img_logo, &esp_logo);
